@@ -1,0 +1,310 @@
+close all
+clear all
+%%
+
+
+% Import des fichiers index contenant les noms d'orgine des fichiers, la
+% nouvelle numerotation et le nombre de clusters optiaml k
+
+%Nclusters = readtable("C:\Users\Zakaria\Desktop\Aticle2\datasets definition\dataset\by_name\N_clusters.txt");
+
+% Convert to output type
+%Nclusters = table2array(Nclusters);
+
+%reel_names = readtable("C:\Users\Zakaria\Desktop\Aticle2\datasets definition\dataset\by_name\reel_names.txt");
+
+%dataset_size = size(Nclusters)
+
+%dataset_count = dataset_size(1)
+
+%% Variables Initialisation
+
+d1=0.005;
+
+
+%% Main program 
+
+dec=1;
+m=[];
+
+%for dataset_index=14
+    
+  
+ d31=readtable('pathbased.txt');  
+%    dataset_adress = strcat('C:\Users\Zakaria\Desktop\Aticle2\datasets definition\dataset\by_name\',num2str(dataset_index),'.txt') ;
+    
+    %d31=readtable(dataset_adress);
+    
+    %k=Nclusters(dataset_index,2) ;
+    k=3;
+    dataset=d31(:,1:2);
+
+    A = table2array(dataset);
+    dataset_index=17;
+    dec=2;
+    B=A(:,1)
+    Bn=(B-mean(B))/(std(B))
+    %Bn=(B-min(B))/(max(B)-min(B))
+    C=A(:,2)
+    Cn=(C-mean(C))/(std(C))
+    %Cn=(C-min(C))/(max(C)-min(C))
+    do=[Bn Cn];
+    [xdic,Centres]=kmeans(do,dec);
+    A=[Bn Cn xdic]
+
+    %%%% Ecrire Bn Cn
+    t=1;
+    N=size(A);
+    A1=A;
+
+    plot_limit=50;
+    
+    %plot_limit=sz(2)    With all dimension of the dataset
+    while (dec <= plot_limit )
+        [xdic,centres]=kmeans(do,dec);
+        A=[Bn Cn xdic];
+        ttt=zeros(plot_limit);
+
+        for i=1:N(1)
+            del(i)=((A(i,2)-centres(A(i,3),2))^2+(A(i,1)-centres(A(i,3),1))^2)^0.5; % Computin the distance between each point of the cluster and the corresponding center 
+            tet=2*atan(del(i)/(2*d1)); % COmputing the initial angle Teta of Epsilone
+            teta(i)=abs((tet-pi())/(d1-0)); %Computing the initial value of Tau as the numerical derivative of Teta whereas the initla value of Teta is equal to pi() for d=0 (Teta(i) is an error in naming Tau)
+        end
+        
+        sz=size(centres);
+
+        % histogram plot and Poisson Distribution fitting
+        vect=reshape(teta,1,[]); 
+        nbr=size(vect);
+        rank=floor(1+3.33*log(nbr(2))); % Histogram Rank computing
+
+        [n,xout] = hist(vect,rank); % Histogram definition
+        
+        [moy,sig]= normfit(vect)
+
+        txt='Normal'
+        pd = fitdist(vect','Normal')
+        [h(dec),p_val(dec)] = chi2gof(vect','CDF',pd)
+        
+        lambdahat(dec)=sig;
+        nor(dec)=moy
+        pd3 = fitdist(vect', 'weibull');
+        wbeil(dec)=pd3.A;
+        wbeilb(dec)=pd3.B;
+        pd2 = fitdist(vect', 'exponential');
+        ex(dec)=pd2.mu;
+        pd4 = fitdist(vect', 'tlocationscale');
+        tloc(dec)=pd4.sigma;
+        tlocmu(dec)=pd4.mu;
+        tlocnu(dec)=pd4.nu;
+        txt1=num2str(dec);
+
+
+
+               txt2=num2str(lambdahat(dec));
+        txt=strcat(txt1,txt2);
+
+        vect_c_r=(vect-mean(vect)^3)/std(vect)^3 ; % Histogram Skweness coefficient computing
+
+        c2f(dec)=sum(vect_c_r)/nbr(2);   % Histogram centering coefficient computing
+
+        dec=dec+1;
+
+    end
+
+
+    model_1=[];
+    model_2=[];
+    
+ 
+    
+%%
+figure
+ subplot(2,3,1)
+        sz=size(lambdahat)
+        plot(lambdahat,'.')
+        
+        txt = strcat('Normal Distrib. \sigma');
+        
+        title(txt, 'Fontsize',12) ;
+       z1=2;
+       z2=2;
+       z3=2;
+       z4=2;
+       z5=2;
+       z6=2;
+        xline(z1,'--g')
+        yline(lambdahat(z1),'--g')
+        
+        grid on
+    %agir sur les fit
+        model_1=fitlm(1:z1,nor(1:z1));
+        model_2=fitlm(z1:50,nor(z1:50));
+        b2=model_2.Coefficients.Estimate(1)
+        b1=model_1.Coefficients.Estimate(1)
+        a2=model_2.Coefficients.Estimate(2)
+        a1=model_1.Coefficients.Estimate(2)
+        k_et=((b2-b1)/(a1-a2))
+        nl=strcat('sigma_normal_distrub;',num2str(dataset_index),';',num2str(k),';',num2str(k_et))
+        m=strvcat(m,nl);
+        hold on
+        plot(model_1)
+        plot(model_2)
+        title(txt, 'Fontsize',12) ;
+         xlabel('k index', 'Fontsize',10)
+        ylabel('\sigma', 'Fontsize',10)
+        
+        subplot(2,3,2)
+        
+        plot(nor,'.')
+        mu='\mu';
+        txt = strcat('Normal Distrib.',mu);
+        
+        title(txt, 'Fontsize',12) ;
+        
+        
+        xline(z2,'--g')
+        yline(nor(z2),'--g')
+        
+        grid on
+    
+        model_1_nor=fitlm(1:z2,nor(1:z2));
+        model_2_nor=fitlm(z2:50,nor(z2:50));
+        b2=model_2_nor.Coefficients.Estimate(1)
+        b1=model_1_nor.Coefficients.Estimate(1)
+        a2=model_2_nor.Coefficients.Estimate(2)
+        a1=model_1_nor.Coefficients.Estimate(2)
+        k_et=((b2-b1)/(a1-a2))
+        nl=strcat('mu_normal_distrub;',num2str(dataset_index),';',num2str(k),';',num2str(k_et))
+        m=strvcat(m,nl);
+        hold on
+        plot(model_1_nor)
+        plot(model_2_nor)
+         title(txt, 'Fontsize',12) ;
+           xlabel('k index', 'Fontsize',10)
+        ylabel('\mu', 'Fontsize',10) 
+       subplot(2,3,3)
+       
+        plot(wbeil,'.')
+        
+        txt = strcat('Weibull Dist  a');
+        
+        title(txt, 'Fontsize',12) ;
+        
+        
+        xline(z3,'--g')
+        yline(wbeil(z3),'--g')
+        
+        grid on
+    
+        model_1_wbeila=fitlm(1:z3,wbeil(1:z3));
+        model_2_wbeila=fitlm(z3:50,wbeil(z3:50));
+         b2=model_2_wbeila.Coefficients.Estimate(1)
+        b1=model_1_wbeila.Coefficients.Estimate(1)
+        a2=model_2_wbeila.Coefficients.Estimate(2)
+        a1=model_1_wbeila.Coefficients.Estimate(2)
+        k_et=((b2-b1)/(a1-a2))
+        nl=strcat('a_wbeil_distrub;',num2str(dataset_index),';',num2str(k),';',num2str(k_et))
+        m=strvcat(m,nl);
+        hold on
+        plot(model_1_wbeila)
+        plot(model_2_wbeila)
+        title(txt, 'Fontsize',12) ;
+       xlabel('k index', 'Fontsize',10)
+        ylabel('a', 'Fontsize',10)
+        subplot(2,3,4)
+   
+         
+       
+       
+        
+        plot(ex,'.')
+        
+        txt = strcat('Exponential Distrib. \lambda');
+        
+        title(txt, 'Fontsize',12) ;
+       
+        
+        xline(z4,'--g')
+        yline(ex(z4),'--g')
+        
+        grid on
+    
+        model_1_ex=fitlm(1:z4,ex(1:z4));
+        model_2_ex=fitlm(z4:50,ex(z4:50));
+         b2=model_2_ex.Coefficients.Estimate(1)
+        b1=model_1_ex.Coefficients.Estimate(1)
+        a2=model_2_ex.Coefficients.Estimate(2)
+        a1=model_1_ex.Coefficients.Estimate(2)
+        k_et=((b2-b1)/(a1-a2))
+        nl=strcat('sigma_exponential_distrub;',num2str(dataset_index),';',num2str(k),';',num2str(k_et))
+        m=strvcat(m,nl);
+        hold on
+        plot(model_1_ex)
+        plot(model_2_ex)
+        title(txt, 'Fontsize',12) ;
+     xlabel('k index', 'Fontsize',10)
+        ylabel('\lambda', 'Fontsize',10)
+
+             subplot(2,3,5)
+       
+        plot(tlocmu,'.')
+        
+        txt = strcat('tlocmuationscale  \alpha');
+        
+        title(txt, 'Fontsize',12) ;
+       
+        
+        xline(z5,'--g')
+        yline(tlocmu(z5),'--g')
+        
+        grid on
+    
+        model_1_tlocmu=fitlm(1:z5,tlocmu(1:z5));
+        model_2_tlocmu=fitlm(z5:50,tlocmu(z5:50));
+        b2=model_2_tlocmu.Coefficients.Estimate(1)
+        b1=model_1_tlocmu.Coefficients.Estimate(1)
+        a2=model_2_tlocmu.Coefficients.Estimate(2)
+        a1=model_1_tlocmu.Coefficients.Estimate(2)
+        k_et=((b2-b1)/(a1-a2))
+        nl=strcat('mu_Tscole_distrub;',num2str(dataset_index),';',num2str(k),';',num2str(k_et))
+        m=strvcat(m,nl);
+        hold on
+        plot(model_1_tlocmu)
+        plot(model_2_tlocmu)
+        title(txt, 'Fontsize',12) ;
+     xlabel('k index', 'Fontsize',10)
+        ylabel('\alpha', 'Fontsize',10)
+         subplot(2,3,6)
+       
+        plot(tloc,'.')
+        
+        txt = strcat('tlocationscale  \gamma');
+        
+        title(txt, 'Fontsize',12) ;
+      
+        xline(z6,'--g')
+        yline(tloc(z6),'--g')
+        
+        grid on
+    
+        model_1_tloc=fitlm(1:z6,tloc(1:z6));
+        model_2_tloc=fitlm(z6:50,tloc(z6:50));
+         b2=model_2_tloc.Coefficients.Estimate(1)
+        b1=model_1_tloc.Coefficients.Estimate(1)
+        a2=model_2_tloc.Coefficients.Estimate(2)
+        a1=model_1_tloc.Coefficients.Estimate(2)
+        k_et=((b2-b1)/(a1-a2))
+        nl=strcat('sigma_Tscole_distrub;',num2str(dataset_index),';',num2str(k),';',num2str(k_et))
+        m=strvcat(m,nl);
+        hold on
+        plot(model_1_tloc)
+        plot(model_2_tloc)
+          title(txt, 'Fontsize',12) ;
+      xlabel('k index', 'Fontsize',10)
+        ylabel('\gamma', 'Fontsize',10)
+        
+         sgtitle(strcat('DATASET N°',num2str(dataset_index),' k= ',num2str(k)),'Fontsize',14)
+         % sgtitle(strcat('DATASET N°17'' k= 35','Fontsize',14));
+       % end
+       % writematrix(m,'M.csv') 
