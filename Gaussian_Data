@@ -1,0 +1,251 @@
+close all
+clear all
+%%
+Nclusters = readtable("C:\Users\Zakaria\Desktop\Aticle2\datasets definition\dataset\by_name\N_clusters.txt");
+
+% Convert to output type
+Nclusters = table2array(Nclusters);
+
+reel_names = readtable("C:\Users\Zakaria\Desktop\Aticle2\datasets definition\dataset\by_name\reel_names.txt");
+
+dataset_size = size(Nclusters)
+
+dataset_count = dataset_size(1)
+%% Variables Initialisation
+alpha=0.001;
+%d=0.1;
+%d1=0.5;
+d=0.01;
+d1=0.005;
+k=1;
+yss=0;
+ys=0;
+tetacentersSom=0;
+l=1;
+var1=rand(1,20);
+var2=rand(1,20);
+%v=repmat([], 31, 1);
+tetacenters_comp=[]
+
+% Import des fichiers index contenant les noms d'orgine des fichiers, la
+% nouvelle numerotation et le nombre de clusters optiaml k
+
+%% Main program 
+
+for dataset_index=1:10
+%dataset=[var1' var2']
+
+dataset_adress = strcat('C:\Users\Zakaria\Desktop\Aticle2\datasets definition\dataset\by_name\',num2str(dataset_index),'.txt') ;
+
+d31=readtable(dataset_adress);
+
+k=Nclusters(dataset_index,2) ;
+
+dataset=d31(:,1:2);
+
+%kl=d31(:,3)
+%kl=table2array(kl);
+%dataset(500:3100,:)=[];
+A = table2array(dataset);
+vi=0;
+f=1;
+fe=1;
+dec=2;
+B=A(:,1)
+Bn=(B-mean(B))/(std(B))
+%Bn=(B-min(B))/(max(B)-min(B))
+C=A(:,2)
+Cn=(C-mean(C))/(std(C))
+%Cn=(C-min(C))/(max(C)-min(C))
+do=[Bn Cn];
+[xdic,Centres]=kmeans(do,dec);
+A=[Bn Cn xdic]
+
+%%%% Ecrire Bn Cn
+t=1;
+N=size(A);
+A1=A;
+
+
+while (dec <= 50 )
+[xdic,centres]=kmeans(do,dec);
+A=[Bn Cn xdic];
+ttt=zeros(N(1));
+    for i=1:N(1)
+        %parfor j=i+1:N(1)
+           % if ((A(i,3) == dec ) && (A(j,3) == dec ))
+           del(i)=((A(i,2)-centres(A(i,3),2))^2+(A(i,1)-centres(A(i,3),1))^2)^0.5;
+            tet=2*atan(del(i)/(2*d1));
+            %tet=abs(-1/del(i))
+            %tet1=2*atan(del(i)/(2*d));
+            %tau(i)=abs(-2*d1/((2*d1/del(i))^2+1));
+            teta(i)=abs((tet-pi())/d1);
+            %teta(i)=tet;
+            ttt(dec)=ttt(dec)+ teta(i);
+            %tetap(i,j)=-2*del(i,j)/d^2*(1+(del(i,j)/(2*d))^2)^(-1)
+           % end
+       % end
+
+    end
+sz=size(centres)
+%for ys=1:sz(1)
+ %   for yss=ys+1:(sz(1))
+  %  delcenters=((centres(ys,2)-centres(yss,2))^2+(centres(ys,1)-centres(yss,1))^2)^0.5;
+   % tetacenters=2*atan((delcenters(ys,yss))/(2*d1));
+    %    tetacenters1=2*atan((delcenters(ys,yss))/(2*d));
+     %   tetacenters_comp(ys,yss)=(tetacenters-tetacenters1)/0.4;
+    %end
+    %tetacentersSom = tetacentersSom+ tetacenters_comp(ys,yss)
+    for cl = 1 : dec -1
+        del(cl)=((centres(cl,2)-centres(cl+1,2))^2+(centres(cl,1)-centres(cl+1,1))^2)^0.5;
+        tetcl=2*atan(del(cl)/(2*d1));
+        %tet1cl=2*atan(del(cl)/(2*d));
+        %tetaC(cl)=(tetcl-tet1cl)/0.4;
+        tetaC(cl)=tetcl;
+        tetacentersSom=tetacentersSom+tetaC(cl);
+     end
+   
+
+
+%tetacentersTrace(dec)=tetacentersSom;
+tetacentersTrace(dec)=tetcl;
+tetacentersSom=0;
+vect=reshape(teta,1,[]);
+nbr=size(vect);
+rank=floor(1+3.33*log(nbr(2)));
+[n,xout]=hist(vect,rank);
+
+lambdahat(dec) = poissfit(vect)
+%lambdahat(1)=[]
+
+%figure
+%hist(vect,rank);
+txt1=num2str(dec);
+txt2=num2str(lambdahat(dec))
+txt=strcat(txt1,txt2)
+%title(txt);
+
+
+vp(t)= (n(1));
+lesvp(t)=n(1)+n(2)+n(3);
+vd(t)=n(floor(rank));
+lesvd(t)=n(floor(rank))+n(floor(rank-1))+n(floor(rank-2));
+
+
+vect_c_r=(vect-mean(vect)^3)/std(vect)^3
+%vect_c_r_3=vect_c_r.^3
+c2f(dec) = sum(vect_c_r)/nbr(2)
+%c2(dec)=3*(mean(vect)-median(vect))/std(vect)
+
+ch(t)=lesvd(t)/lesvp(t)*(nbr(2)-dec)/(dec-1);
+t=t+1;
+
+ 
+%txt=num2str(dec);
+me(dec)=median(vect)
+txt2=num2str(me(dec))
+%txt1=strcat(txt,'__med(',txt2,')')
+%hist(vect,rank);
+%title ( txt1)
+dec=dec+1;
+fe=fe+1;
+
+end
+
+%figure ;
+%plot(lambdahat)
+%title('Poission coefficient')
+
+%lesvp_norm=lesvp-
+figure
+subplot(1,2,1)
+plot(lambdahat)
+title('Poission coefficient')
+subplot(1,2,2)
+plot(c2f)
+title('coif centrag')
+figure
+%subplot(1,2,1)
+plot(vp)
+%plot(vp/std(vp))
+title('vp')
+%subplot(1,2,2)
+figure
+%plot(vd/std(vd))
+plot(vd)
+title('vd')
+figure
+subplot(1,2,1)
+plot(lesvp)
+title('lesvp')
+subplot(1,2,2)
+plot(lesvd)
+title('lesvd')
+
+figure
+%plot(tetacentersTrace-vd)
+
+plot(tetacentersTrace)
+title('tetacentre -vd')
+
+lesvd_norm=(lesvd-min(lesvd))/(max(lesvd)-min(lesvd));
+lesvp_norm=(lesvp-min(lesvp))/(max(lesvp)-min(lesvp))
+c2f_norm = (c2f-min(c2f))/(max(c2f)-min(c2f));
+
+figure ;
+
+hold on
+plot(lesvd_norm)
+%plot(lesvp_norm)
+plot(c2f_norm)
+title('norm_lesvd & c2f_norm')
+legend('lesvd','c2f_norm')
+
+figure
+plot(log(c2f_norm))
+%title('coif centrage norme')
+lambdahat_norm=(lambdahat-min(lambdahat))/(max(lambdahat)-min(lambdahat));
+logc2f=log(c2f_norm);
+logc2f_norm= (logc2f-min(logc2f))/(max(logc2f)-min(logc2f))
+
+%figure
+%plot(c2f_norm,'-s')
+%hold on
+%%%%%%plot(logc2f_norm,'-v')
+%plot(lambdahat_norm,'-*')
+%legend('c2f_n_o_r_m','poisson_n_o_r_m')
+%xlim([4,49])
+
+close all
+
+figure 
+
+plot(lambdahat)
+xlim([2,50])
+title('Poisson Parameter')
+xline(k,'--g')
+yline(lambdahat(k),'--g')
+f.Position(3:4) = [400 400]
+grid
+
+model_1=fitlm(1:k,lambdahat(1:k))
+model_2=fitlm(k:50,lambdahat(k:50))
+
+hold on
+plot(model_1)
+plot(model_2)
+
+
+b1=model_1.Coefficients.Estimate(1)
+a1=model_1.Coefficients.Estimate(2)
+b2=model_2.Coefficients.Estimate(1)
+a2=model_2.Coefficients.Estimate(2)
+k_star(dataset_index)=(b2-b1)/(a1-a2)
+
+end 
+
+%compteur=1:5
+%p = polyfit(compteur,lambdahat(1:5),1)
+%lambdahat_model = polyval(p,1:15)
+%hold on
+%plot(lambdahat_model,'-rv')
